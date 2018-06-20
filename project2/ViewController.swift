@@ -32,32 +32,45 @@ class ViewController: UIViewController, FSCalendarDelegate, FSCalendarDataSource
     Date.font = UIFont.systemFont(ofSize: 60.0)
     Date.textColor = .black
     view.addSubview(Date)
-    DispatchQueue(label: "background").async {
-      let realm = try! Realm()
-      realm.objects(Kokoro.self).forEach { kokoro in
-        self.setCellColor(with: kokoro)
-      }
+//    DispatchQueue(label: "background").async {
+//      let realm = try! Realm()
+//      realm.objects(Kokoro.self).forEach { kokoro in
+//        self.setCellColor(with: kokoro)
+//      }
+//    }
+  }
+  
+  private func setCellColor(with kokoro: Kokoro, at cell: FSCalendarCell) {
+//    let calendar = Calendar.current
+//    let date = self.getDay(kokoro.date)
+//    let selectDate = calendar.date(from: DateComponents(year: date.0, month: date.1, day: date.2))
+//    let cell = self.dateView.cell(for: selectDate!, at: .current)
+    cell.layer.cornerRadius = 10
+    cell.layer.masksToBounds = true
+    switch kokoro.kokoro {
+    case 1:
+      cell.backgroundColor = UIColor.joy
+    case 2:
+      cell.backgroundColor = UIColor.anger
+    case 3:
+      cell.backgroundColor = UIColor.sadness
+    case 4:
+      cell.backgroundColor = UIColor.happiness
+    default:
+      cell.backgroundColor = UIColor.rgba(red: 255, green: 255, blue: 255, alpha: 0.8)
     }
   }
   
-  private func setCellColor(with kokoro: Kokoro) {
-    let calendar = Calendar.current
-    let date = self.getDay(kokoro.date)
-    let selectDate = calendar.date(from: DateComponents(year: date.0, month: date.1, day: date.2))
-    let cell = self.dateView.cell(for: selectDate!, at: .current)
-    cell?.layer.cornerRadius = 10
-    cell?.layer.masksToBounds = true
-    switch kokoro.kokoro {
-    case 1:
-      cell?.backgroundColor = UIColor.joy
-    case 2:
-      cell?.backgroundColor = UIColor.anger
-    case 3:
-      cell?.backgroundColor = UIColor.sadness
-    case 4:
-      cell?.backgroundColor = UIColor.happiness
-    default:
-      cell?.backgroundColor = UIColor.rgba(red: 255, green: 255, blue: 255, alpha: 0.8)
+  func calendar(_ calendar: FSCalendar, willDisplay cell: FSCalendarCell, for date: Date, at monthPosition: FSCalendarMonthPosition) {
+    let realm = try! Realm()
+    let dateStr = dateFormatter.string(from: date)
+    var kokoro = realm.objects(Kokoro.self).filter("date == %d", dateStr).first
+    if kokoro == .none {
+      kokoro = Kokoro()
+      kokoro?.date = dateStr
+    }
+    if let kokoro = kokoro {
+      self.setCellColor(with: kokoro, at: cell)
     }
   }
   
@@ -81,7 +94,15 @@ class ViewController: UIViewController, FSCalendarDelegate, FSCalendarDataSource
         realm.add(kokoro!)
       }
     }
-    self.setCellColor(with: kokoro!)
+    
+    let c = Calendar.current
+    let d = self.getDay(date)
+    let selectDate = c.date(from: DateComponents(year: d.0, month: d.1, day: d.2))
+    let cell = self.dateView.cell(for: selectDate!, at: .current)
+    if let kokoro = kokoro,
+       let cell = cell {
+      self.setCellColor(with: kokoro, at: cell)
+    }
   }
   
   private func getDay(_ date:String) -> (Int,Int,Int){
